@@ -11,6 +11,21 @@ from commons.instances.instances import logger
 class ConfirmationController:
 
     @staticmethod
+    def list_all():
+        """GET /api/confirmation/ — toutes les écritures avec filtre statut optionnel."""
+        try:
+            user_id = int(get_jwt_identity())
+            status = request.args.get("status", "all")
+            limit = int(request.args.get("limit", 50))
+            items = ConfirmationManager.list_all(user_id=user_id, status=status, limit=limit)
+            return CustomResponse.send_response(
+                message="OK", success=True, status_code=200, data=items
+            )
+        except Exception as e:
+            logger.error(f"Error in ConfirmationController.list_all: {e}")
+            return CustomResponse.send_serveur_error(error=e, success=False, status_code=500)
+
+    @staticmethod
     def list_pending():
         """GET /api/confirmation/pending — écritures en attente de confirmation."""
         try:
@@ -153,6 +168,20 @@ class ConfirmationController:
             if not rejected:
                 return CustomResponse.send_response(
                     message="Action introuvable.", success=False, status_code=404
+                )
+            # Sauvegarde du refus dans l'historique de la conversation
+            if execution.conversation_id:
+                from adaptater.conversation.conversation_adaptater import ConversationAdaptater
+                tool_label = {
+                    "create_invoice": "facture",
+                    "create_quote": "devis",
+                    "create_client": "client",
+                    "log_event": "événement",
+                }.get(execution.tool_name, "action")
+                ConversationAdaptater.add_message(
+                    conversation_id=execution.conversation_id,
+                    role="assistant",
+                    content=f"Création de {tool_label} annulée par l'utilisateur.",
                 )
             return CustomResponse.send_response(
                 message="Action refusée.", success=True, status_code=200

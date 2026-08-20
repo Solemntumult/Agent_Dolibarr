@@ -213,3 +213,77 @@ class ChatController:
         except Exception as e:
             logger.error(f"Error in ChatController.pending_actions: {e}")
             return CustomResponse.send_serveur_error(error=e, success=False, status_code=500)
+
+    @staticmethod
+    def dashboard_clients():
+        """GET /api/chat/dashboard/clients — liste des clients pour le tableau de bord."""
+        try:
+            from adaptater.dolibarr.thirdparty_adaptater import ThirdpartyAdaptater
+            clients = ThirdpartyAdaptater.search(limit=50, type_="customer")
+            return CustomResponse.send_response(
+                message="OK", success=True, status_code=200,
+                data={"clients": clients}
+            )
+        except Exception as e:
+            logger.error(f"Error in ChatController.dashboard_clients: {e}")
+            return CustomResponse.send_serveur_error(error=e, success=False, status_code=500)
+
+    @staticmethod
+    def dashboard_extended():
+        """GET /api/chat/dashboard/extended — données supplémentaires du tableau de bord."""
+        try:
+            from adaptater.dolibarr.invoice_adaptater import InvoiceAdaptater
+            from adaptater.dolibarr.order_adaptater import OrderAdaptater
+            from adaptater.dolibarr.thirdparty_adaptater import ThirdpartyAdaptater
+            from adaptater.dolibarr.agenda_event_adaptater import AgendaEventAdaptater
+            data = {}
+
+            # Top clients par CA (déjà calculé dans get_sales_statistics)
+            try:
+                stats = InvoiceAdaptater.get_sales_statistics("mois")
+                data["top_clients"] = stats.get("current_period", {}).get("top_clients", [])
+            except Exception as e:
+                logger.warning(f"Dashboard extended top_clients: {e}")
+                data["top_clients"] = []
+
+            # Nouveaux clients du mois
+            try:
+                data["new_clients_count"] = ThirdpartyAdaptater.count_new_this_month()
+            except Exception as e:
+                logger.warning(f"Dashboard extended new_clients: {e}")
+                data["new_clients_count"] = 0
+
+            # Commandes par statut
+            try:
+                data["orders"] = OrderAdaptater.count_by_status()
+            except Exception as e:
+                logger.warning(f"Dashboard extended orders: {e}")
+                data["orders"] = {"error": str(e)}
+
+            # Top produits vendus
+            try:
+                data["top_products"] = InvoiceAdaptater.get_top_products("mois", limit=5)
+            except Exception as e:
+                logger.warning(f"Dashboard extended top_products: {e}")
+                data["top_products"] = []
+
+            # Délai moyen de paiement
+            try:
+                data["payment_delay"] = InvoiceAdaptater.get_avg_payment_delay()
+            except Exception as e:
+                logger.warning(f"Dashboard extended payment_delay: {e}")
+                data["payment_delay"] = {"avg_days": None, "count": 0}
+
+            # Prochains événements
+            try:
+                data["upcoming_events"] = AgendaEventAdaptater.list_upcoming(limit=5)
+            except Exception as e:
+                logger.warning(f"Dashboard extended events: {e}")
+                data["upcoming_events"] = []
+
+            return CustomResponse.send_response(
+                message="OK", success=True, status_code=200, data=data
+            )
+        except Exception as e:
+            logger.error(f"Error in ChatController.dashboard_extended: {e}")
+            return CustomResponse.send_serveur_error(error=e, success=False, status_code=500)

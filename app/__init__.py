@@ -26,6 +26,7 @@ from data.entities.audit_log.audit_log import AuditLog  # noqa: F401
 from data.entities.scheduled_task.scheduled_task import ScheduledTask  # noqa: F401
 from data.entities.agent_settings.agent_settings import AgentSettings  # noqa: F401
 from data.entities.vector_document.vector_document import VectorDocument  # noqa: F401
+from data.entities.email.inbound_email import InboundEmail  # noqa: F401
 
 app = create_app()
 

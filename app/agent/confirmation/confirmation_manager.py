@@ -56,19 +56,45 @@ class ConfirmationManager:
         return ToolExecutionAdaptater.get_by_id(confirmation_id)
 
     @staticmethod
-    def list_pending(user_id: int = None) -> list:
-        """Liste des écritures en attente de confirmation (pour l'utilisateur ou globales)."""
+    def get_last_pending(conversation_id: int = None, user_id: int = None):
+        """Récupère la dernière action en attente pour une conversation ou un utilisateur."""
         from data.entities.tool_execution.tool_execution import ToolExecution
         try:
+            stat_val = ConfirmationStatus.PENDING.value if hasattr(ConfirmationStatus.PENDING, "value") else "pending"
             query = ToolExecution.query.filter_by(
-                confirmation_status=ConfirmationStatus.PENDING,
                 tool_sense=ToolSense.WRITE,
+                confirmation_status=stat_val,
             )
+            if conversation_id:
+                query = query.filter_by(conversation_id=conversation_id)
+            elif user_id:
+                query = query.filter((ToolExecution.user_id == user_id) | (ToolExecution.user_id.is_(None)))
+            return query.order_by(ToolExecution.created_at.desc()).first()
+        except Exception as e:
+            logger.error(f"ConfirmationManager.get_last_pending failed: {e}")
+            return None
+
+    @staticmethod
+    def list_pending(user_id: int = None) -> list:
+        """Liste des écritures en attente de confirmation (pour l'utilisateur ou globales)."""
+        return ConfirmationManager.list_all(user_id=user_id, status=ConfirmationStatus.PENDING)
+
+    @staticmethod
+    def list_all(user_id: int = None, status: str = None, limit: int = 50) -> list:
+        """Liste des écritures avec filtre de statut optionnel (pending, confirmed, rejected, all)."""
+        from data.entities.tool_execution.tool_execution import ToolExecution
+        try:
+            query = ToolExecution.query.filter_by(tool_sense=ToolSense.WRITE)
+            if status and status != "all":
+                # Statut normalisé
+                stat_val = status.value if hasattr(status, "value") else str(status)
+                query = query.filter_by(confirmation_status=stat_val)
             if user_id:
                 query = query.filter(
                     (ToolExecution.user_id == user_id) | (ToolExecution.user_id.is_(None))
                 )
-            return [te.to_dict() for te in query.order_by(ToolExecution.created_at.desc()).limit(50).all()]
+            return [te.to_dict() for te in query.order_by(ToolExecution.created_at.desc()).limit(limit).all()]
         except Exception as e:
-            logger.error(f"ConfirmationManager.list_pending failed: {e}")
+            logger.error(f"ConfirmationManager.list_all failed: {e}")
             return []
+

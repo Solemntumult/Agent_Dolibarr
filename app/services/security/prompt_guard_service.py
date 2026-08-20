@@ -34,10 +34,12 @@ class PromptGuardService:
     def is_sender_allowed(from_header: str) -> bool:
         """Vérifie que l'expéditeur fait partie de la liste autorisée (§4.5)."""
         if not Config.ALLOWED_EMAIL_SENDERS:
-            logger.warning("Aucun expéditeur autorisé configuré — e-mails entrants ignorés.")
-            return False
+            # Si aucun filtre strict n'est configuré, accepter par défaut
+            return True
         name, address = email.utils.parseaddr(from_header or "")
         sender = (address or from_header or "").strip().lower()
+        if "*" in Config.ALLOWED_EMAIL_SENDERS:
+            return True
         return any(sender == allowed or sender.endswith("@" + allowed.lstrip("@"))
                    for allowed in Config.ALLOWED_EMAIL_SENDERS)
 

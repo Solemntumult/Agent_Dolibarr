@@ -38,13 +38,31 @@ _WRITE_TOOLS = {"create_client", "create_quote", "create_invoice", "convert_quot
 class IntentRouter:
 
     @staticmethod
-    def select_tool_names(message: str, include_write: bool = True) -> set:
-        text = (message or "").lower()
+    def select_tool_names(message: str, include_write: bool = True, last_assistant_message: str = None) -> set:
+        text = (message or "").strip().lower()
         selected = set(_BASE_READ)
+
+        # Détection des réponses courtes contextuelles
+        is_short_reply = len(text) <= 30 or re.search(
+            r"^(non|oui|vas-y|vas y|ok|d'accord|daccord|confirme|valide|crée|cree|procède|procede|fais-le|fais le|go|c'est bon|c est bon|aucun|aucune)\b",
+            text,
+            re.IGNORECASE,
+        )
+
+        last_text = (last_assistant_message or "").lower()
+        has_writing_context = any(w in last_text for w in ["facture", "devis", "client", "récapitulatif", "créer", "finaliser", "souhaitez-vous", "confirmation"])
+
+        # Réponse courte + contexte d'écriture : n'exposer que les outils d'écriture
+        # (pas besoin de search_client, list_products, etc. pour un simple "oui")
+        if is_short_reply and has_writing_context and include_write:
+            return _WRITE_TOOLS | {"search_client"}
 
         for pattern, tools in _INTENT_MAP:
             if re.search(pattern, text, re.IGNORECASE):
                 selected.update(tools)
+
+        if include_write and (is_short_reply or has_writing_context):
+            selected.update(_WRITE_TOOLS)
 
         if not include_write:
             selected -= _WRITE_TOOLS

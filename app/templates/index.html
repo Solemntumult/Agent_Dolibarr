@@ -1,57 +1,59 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="IFFEN - Agent IA Dolibarr — réalisé par ICT Consulting">
-    <meta name="theme-color" content="#002E5B">
-    <title>IFFEN - Agent IA Dolibarr</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23002E5B'/%3E%3Cpath d='M36 10 L18 38 h10 l-4 16 L44 26 h-10 z' fill='%23F18507'/%3E%3C/svg%3E">
+    <meta name="description" content="iffen - Agent IA Dolibarr">
+    <meta name="theme-color" content="#0B3C5D">
+    <title>Assistant IA</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/favicon-192x192.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
     
+    <!-- Google Fonts: Montserrat, Poppins, Inter, Open Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&family=Roboto+Slab:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <script>
-      document.documentElement.classList.add('fonts-pending');
-      Promise.race([
-        document.fonts.ready,
-        new Promise(r => setTimeout(r, 2500))
-      ]).then(() => document.documentElement.classList.remove('fonts-pending'));
-    </script>
-    <style>.fonts-pending body { opacity: 0; } body { transition: opacity 0.3s ease; }</style>
-
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/loading.css') }}">
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen" style="display:none;">
+        <img src="{{ url_for('static', filename='img/logo-iffen.png') }}" alt="iffen" class="loading-logo">
+    </div>
+
     <!-- Login View -->
     <div id="login-view" class="login-view">
-        <div class="login-orb login-orb--1"></div>
-        <div class="login-orb login-orb--2"></div>
-        <div class="login-orb login-orb--3"></div>
+        <div class="login-decor login-decor--1"></div>
+        <div class="login-decor login-decor--2"></div>
         
-        <div class="login-card">
+        <div class="login-card card-iffen">
             <div class="login-brand">
-                <div class="brand-ring large"><img src="{{ url_for('static', filename='img/logo-iffen.png') }}" alt="IFFEN" class="brand-logo"></div>
+                <div class="brand-logo-wrap">
+                    <img src="{{ url_for('static', filename='img/logo-iffen.png') }}" alt="iffen" class="brand-logo" onerror="this.style.display='none'; document.getElementById('brand-fallback').style.display='flex';">
+                    <div id="brand-fallback" class="brand-fallback" style="display:none;">iffen</div>
+                </div>
             </div>
             
             <form id="login-form" class="login-form">
                 <div class="form-group">
-                    <label for="login-email">Identifiant / Email</label>
-                    <input type="text" id="login-email" required placeholder="admin ou nom@entreprise.com" autocomplete="username">
+                    <label for="login-email">Identifiant ou E-mail</label>
+                    <input type="text" id="login-email" required placeholder="admin ou contact@entreprise.bj" autocomplete="username">
                 </div>
                 <div class="form-group">
                     <label for="login-password">Mot de passe</label>
-                    <input type="password" id="login-password" required placeholder="••••••••">
+                    <input type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password">
                 </div>
                 <div id="login-error" class="error-message hidden"></div>
                 <button type="submit" id="login-btn" class="btn btn-primary btn-block">Se connecter</button>
             </form>
-            <p class="login-footer">Réalisé par ICT Consulting</p>
+
         </div>
     </div>
 
-    <!-- Main Chat View -->
+    <!-- Main App View -->
     <div id="chat-view" class="chat-view" style="display: none;">
         <!-- Sidebar Overlay (Mobile) -->
         <div id="sidebar-overlay" class="sidebar-overlay"></div>
@@ -59,24 +61,36 @@
         <!-- Sidebar -->
         <aside id="sidebar" class="sidebar">
             <div class="sidebar-header">
-                <button id="brand-home" class="brand-home" title="Accueil" aria-label="Accueil">
-                    <div class="brand-ring"><img src="{{ url_for('static', filename='img/logo-iffen.png') }}" alt="IFFEN" class="brand-logo"></div>
+                <button id="brand-home" class="brand-home" title="Accueil iffen" aria-label="Accueil">
+                    <div class="brand-logo-sidebar">
+                        <img src="{{ url_for('static', filename='img/logo-iffen.png') }}" alt="iffen" class="sidebar-logo-img" onerror="this.style.display='none'; document.getElementById('sidebar-logo-text').style.display='block';">
+                        <span id="sidebar-logo-text" class="sidebar-logo-text" style="display:none;">iffen</span>
+                    </div>
+
                 </button>
             </div>
             
             <button id="new-chat-btn" class="btn btn-primary new-chat-btn">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 <span>Nouvelle discussion</span>
             </button>
             
-            <div class="sidebar-section">
-                <h3>Discussions récentes</h3>
-                <div id="conversation-list" class="conversation-list">
-                    <!-- Conversations loaded dynamically -->
-                </div>
-            </div>
-            
-            <div class="sidebar-menu">
+            <div class="sidebar-nav-group">
+                <div class="nav-group-title">Navigation</div>
+                <button id="menu-chat" class="menu-item active" data-view="chat">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Assistant IA</span>
+                </button>
+                <button id="menu-validations" class="menu-item" data-view="validations">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    <span>Validations</span>
+                    <span id="validations-badge" class="badge-count hidden">0</span>
+                </button>
+                <button id="menu-emails" class="menu-item" data-view="emails">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <span>Canal E-mail</span>
+                    <span id="emails-badge" class="badge-count hidden">0</span>
+                </button>
                 <button id="menu-dashboard" class="menu-item" data-view="dashboard">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                     <span>Tableau de bord</span>
@@ -87,12 +101,19 @@
                 </button>
             </div>
             
+            <div class="sidebar-section">
+                <div class="nav-group-title">Discussions récentes</div>
+                <div id="conversation-list" class="conversation-list">
+                    <!-- Conversations chargées dynamiquement -->
+                </div>
+            </div>
+            
             <div class="sidebar-footer">
                 <div class="user-profile">
-                    <div id="user-avatar" class="user-avatar">U</div>
+                    <div id="user-avatar" class="user-avatar">IF</div>
                     <div class="user-info">
                         <div id="user-name" class="user-name">Utilisateur</div>
-                        <div id="user-role" class="user-role">Dolibarr</div>
+                        <div id="user-role" class="user-role">Dolibarr ERP</div>
                     </div>
                 </div>
                 <button id="logout-btn" class="icon-btn" title="Déconnexion" aria-label="Déconnexion">
@@ -105,13 +126,17 @@
         <main class="main-content">
             <!-- Header -->
             <header class="top-header">
-                <button id="mobile-menu-btn" class="icon-btn mobile-only" aria-label="Menu">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-                </button>
-                <h2 id="chat-title" class="chat-title">Assistant IA</h2>
+                <div class="top-header-left">
+                    <button id="mobile-menu-btn" class="icon-btn mobile-only mobile-menu-btn" aria-label="Menu">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
+                    <div>
+                        <h2 id="chat-title" class="chat-title">Assistant IA</h2>
+                    </div>
+                </div>
                 <div class="header-actions">
                     <button id="theme-toggle" class="icon-btn" title="Changer le thème" aria-label="Changer le thème">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="5"></circle>
                             <line x1="12" y1="1" x2="12" y2="3"></line>
                             <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -129,67 +154,233 @@
             <!-- Chat Panel -->
             <div id="chat-panel" class="panel active">
                 <div id="messages" class="messages-container">
-                    <!-- Default Welcome Message -->
+                    <!-- Default Welcome Screen -->
                     <div class="message system-message welcome-screen">
-                        <div class="welcome-header">
-                            <h2>Bonjour, comment puis-je vous aider ?</h2>
-                            <p>Posez une question ou utilisez les suggestions ci-dessous.</p>
+                        <div class="welcome-centered">
+                            <div class="welcome-icon">
+                                <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <path d="M32 32 L30 60 H34 L32 32Z" fill="var(--iffen-primary, #0B2E4F)"/>
+                                    <g class="turbine-blades" style="transform-origin: 32px 30px;">
+                                        <path d="M32 30 C32 30 36 6 32 2 C28 6 32 30 32 30Z" fill="#8DC63F" transform="rotate(0 32 30)"/>
+                                        <path d="M32 30 C32 30 36 6 32 2 C28 6 32 30 32 30Z" fill="#FBB040" transform="rotate(120 32 30)"/>
+                                        <path d="M32 30 C32 30 36 6 32 2 C28 6 32 30 32 30Z" fill="var(--iffen-primary, #0B2E4F)" transform="rotate(240 32 30)"/>
+                                    </g>
+                                    <circle cx="32" cy="30" r="2.8" fill="var(--iffen-primary, #0B2E4F)"/>
+                                </svg>
+                            </div>
+                            <h2 class="welcome-title">Bienvenue, je suis votre assistant pour Dolibarr.</h2>
                         </div>
                     </div>
                 </div>
                 
                 <footer class="composer">
-                    <div id="composer-suggestions" class="composer-suggestions">
-                        <button class="suggestion-chip" data-prompt="Quel est mon chiffre d'affaires facturé ce mois-ci ?" style="--i:0">CA du mois</button>
-                        <button class="suggestion-chip" data-prompt="Liste les factures impayées de plus de 30 jours." style="--i:1">Impayés +30 jours</button>
-                        <button class="suggestion-chip" data-prompt="Quels produits sont en stock bas ?" style="--i:2">Stock bas</button>
-                        <button class="suggestion-chip" data-prompt="Fais une synthèse du trimestre en cours" style="--i:3">Synthèse trimestrielle</button>
-                        <button class="suggestion-chip" data-prompt="Comment créer un devis ?" style="--i:4">Créer un devis</button>
-                    </div>
-                    
                     <div class="composer-shell">
                         <div class="composer-box">
-                            <textarea id="message-input" rows="1" placeholder="Envoyer un message…"></textarea>
+                            <textarea id="message-input" rows="1" placeholder="Posez une question ou demandez une opération Dolibarr…"></textarea>
                             <button id="send-btn" class="btn btn-primary send-btn" title="Envoyer (Entrée)">
                                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                             </button>
                         </div>
                     </div>
-                    <p class="composer-hint">Entrée pour envoyer · Maj+Entrée pour nouvelle ligne</p>
+                    <div id="composer-suggestions" class="composer-suggestions">
+                        <button class="suggestion-chip" data-prompt="Quel est mon chiffre d'affaires facturé ce mois-ci ?">CA du mois</button>
+                        <button class="suggestion-chip" data-prompt="Liste les factures impayées de plus de 30 jours.">Impayés +30j</button>
+                        <button class="suggestion-chip" data-prompt="Quels produits sont en stock bas ou critique ?">Stock bas</button>
+                        <button class="suggestion-chip" data-prompt="Crée un devis pour un client">Créer un devis</button>
+                        <button class="suggestion-chip" data-prompt="Crée une facture pour un client">Créer une facture</button>
+                    </div>
+                    <p class="composer-hint">Appuyez sur Entrée pour envoyer · Maj+Entrée pour un saut de ligne</p>
                 </footer>
             </div>
 
-            <!-- Dashboard Panel -->
-            <div id="dashboard-panel" class="panel">
-                <div class="dashboard-header">
-                    <h2>Tableau de bord ERP</h2>
-                    <button id="dash-refresh" class="btn btn-secondary" aria-label="Rafraîchir les données">
+            <!-- Validations Panel -->
+            <div id="validations-panel" class="panel validations-panel" style="display: none;">
+                <div class="panel-header-block">
+                    <div>
+                        <p class="panel-subtitle">Contrôle et validation des écritures en attente</p>
+                    </div>
+                    <button id="validations-refresh" class="btn btn-outline" aria-label="Rafraîchir les validations">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                        Rafraîchir
+                        <span>Rafraîchir</span>
+                    </button>
+                </div>
+
+                <div class="validations-filter-bar">
+                    <div class="filter-pills">
+                        <button class="filter-pill active" data-status="pending">En attente (<span id="count-pending">0</span>)</button>
+                        <button class="filter-pill" data-status="confirmed">Confirmées (<span id="count-confirmed">0</span>)</button>
+                        <button class="filter-pill" data-status="rejected">Refusées (<span id="count-rejected">0</span>)</button>
+                        <button class="filter-pill" data-status="all">Toutes (<span id="count-all">0</span>)</button>
+                    </div>
+                </div>
+
+                <div id="validations-empty" class="empty-state-card card-iffen" style="display: none;">
+                    <div class="empty-state-icon"></div>
+                    <h3>Aucune validation trouvée</h3>
+                    <p id="validations-empty-msg">Aucune action n'est actuellement en attente de confirmation.</p>
+                </div>
+
+                <div id="validations-list" class="validations-grid">
+                    <!-- Cartes de validation injectées par JS -->
+                </div>
+            </div>
+
+            <!-- Emails Panel -->
+            <div id="emails-panel" class="panel emails-panel" style="display: none;">
+                <div class="panel-header-block">
+                    <div>
+                        <p class="panel-subtitle">Traitement des courriels entrants, analyse automatique par l'Agent IA & validation des réponses/actions.</p>
+                    </div>
+                    <div class="panel-header-actions">
+                        <button id="email-poll-btn" class="btn btn-primary" aria-label="Synchroniser IMAP">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                            <span>Synchroniser IMAP</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Banner -->
+                <div id="email-status-banner" class="email-status-banner card-iffen">
+                    <div class="status-indicator-item">
+                        <span class="status-indicator-dot" id="dot-imap"></span>
+                        <div class="status-indicator-text">
+                            <strong>Réception IMAP :</strong> <span id="status-imap-label">Vérification...</span>
+                        </div>
+                    </div>
+                    <div class="status-indicator-item">
+                        <span class="status-indicator-dot" id="dot-smtp"></span>
+                        <div class="status-indicator-text">
+                            <strong>Envoi SMTP :</strong> <span id="status-smtp-label">Vérification...</span>
+                        </div>
+                    </div>
+                    <div class="status-indicator-item">
+                        <span class="status-indicator-dot ok"></span>
+                        <div class="status-indicator-text">
+                            <strong>Garde-fou Sécurité :</strong> <span id="status-security-label">Actif (Anti-injection & Whitelist)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="validations-filter-bar">
+                    <div class="filter-pills">
+                        <button class="filter-pill active email-filter-pill" data-status="pending">En attente de validation (<span id="count-email-pending">0</span>)</button>
+                        <button class="filter-pill email-filter-pill" data-status="processed">Traités & Envoyés (<span id="count-email-processed">0</span>)</button>
+                        <button class="filter-pill email-filter-pill" data-status="suspicious">Suspects / Bloqués (<span id="count-email-suspicious">0</span>)</button>
+                        <button class="filter-pill email-filter-pill" data-status="all">Tous les e-mails (<span id="count-email-all">0</span>)</button>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emails-empty" class="empty-state-card card-iffen" style="display: none;">
+                    <h3>Aucun courriel</h3>
+                    <p id="emails-empty-msg">Aucun e-mail ne correspond au filtre sélectionné.</p>
+                </div>
+
+                <!-- Email List Grid -->
+                <div id="emails-list" class="emails-grid">
+                    <!-- Email cards injectées par JS -->
+                </div>
+            </div>
+
+            <!-- Dashboard Panel -->
+            <div id="dashboard-panel" class="panel dashboard-panel" style="display: none;">
+                <div class="panel-header-block">
+                    <div>
+                        <p class="panel-subtitle">Indicateurs clés d'activité commerciale et opérationnelle</p>
+                    </div>
+                    <button id="dash-refresh" class="btn btn-outline" aria-label="Rafraîchir les données">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        <span>Rafraîchir</span>
                     </button>
                 </div>
                 <div id="dash-error" class="error-message" style="display: none;"></div>
                 <div id="dash-cards" class="dashboard-grid">
-                    <!-- Metrics loaded by JS -->
+                    <!-- Métriques chargées par JS -->
+                </div>
+
+                <!-- Liste des clients -->
+                <div class="dashboard-section" id="dash-clients-section" style="display:none;">
+                    <div class="dashboard-section-header">
+                        <h3 class="dashboard-section-title">Clients</h3>
+                        <div class="dashboard-search">
+                            <input type="text" id="client-search" class="dash-search-input" placeholder="Rechercher un client…">
+                        </div>
+                    </div>
+                    <div id="dash-clients-list" class="dash-clients-grid">
+                        <!-- Liste clients injectée par JS -->
+                    </div>
+                    <div id="dash-clients-empty" class="dash-empty-state" style="display:none;">
+                        Aucun client trouvé
+                    </div>
                 </div>
             </div>
 
             <!-- Settings Panel -->
-            <div id="settings-panel" class="panel">
+            <div id="settings-panel" class="panel settings-panel" style="display: none;">
                 <div class="settings-container">
-                    <h2>Paramètres</h2>
-                    <p>Configuration de la connexion à votre Dolibarr.</p>
+                    <div class="panel-header-block">
+                        <div>
+                            <p class="panel-subtitle">Configuration des seuils opérationnels et du modèle LLM</p>
+                        </div>
+                    </div>
                     
-                    <form id="settings-form" class="settings-form">
+                    <form id="settings-form" class="settings-form card-iffen">
                         <div id="settings-fields" class="settings-fields">
-                            <!-- Populated by JS -->
+                            <!-- Rempli par JS -->
                         </div>
                         <div id="settings-status" class="status-message"></div>
-                        <button type="submit" id="settings-save" class="btn btn-primary">Enregistrer les paramètres</button>
+                        <div class="settings-actions">
+                            <button type="submit" id="settings-save" class="btn btn-primary">Enregistrer les paramètres</button>
+                        </div>
                     </form>
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Email Simulation Modal -->
+    <div id="email-sim-modal" class="modal-overlay hidden" style="display: none;">
+        <div class="modal-card card-iffen">
+            <div class="modal-header">
+                <h3>Simuler la réception d'un e-mail (IMAP)</h3>
+                <button id="modal-close-btn" class="icon-btn" aria-label="Fermer">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">Injectez un courriel pour tester l'analyse de l'agent, la consultation de Dolibarr, l'intention et la proposition d'action.</p>
+                
+                <div class="form-group">
+                    <label>Scénarios types :</label>
+                    <div class="sim-presets">
+                        <button type="button" class="btn btn-sm btn-outline preset-btn" data-preset="quote">Demande de devis</button>
+                        <button type="button" class="btn btn-sm btn-outline preset-btn" data-preset="invoice">Question facture</button>
+                        <button type="button" class="btn btn-sm btn-outline preset-btn" data-preset="stock">Stock produit</button>
+                        <button type="button" class="btn btn-sm btn-outline preset-btn" data-preset="security">Test sécurité</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="sim-sender">Expéditeur :</label>
+                    <input type="email" id="sim-sender" placeholder="client@exemple.fr" value="contact@solarexpert.fr">
+                </div>
+                <div class="form-group">
+                    <label for="sim-subject">Sujet :</label>
+                    <input type="text" id="sim-subject" placeholder="Sujet de l'e-mail" value="Demande de devis pour équipement énergétique">
+                </div>
+                <div class="form-group">
+                    <label for="sim-body">Corps du message :</label>
+                    <textarea id="sim-body" rows="4" placeholder="Bonjour, pourriez-vous nous transmettre un devis...">Bonjour,
+Nous souhaitons obtenir un devis pour la fourniture de 4 onduleurs solaires et la prestation de formation associée.
+Merci d'avance pour votre retour rapide.
+Cordialement,</textarea>
+                </div>
+                <div id="sim-error" class="error-message hidden"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel-btn" class="btn btn-outline">Annuler</button>
+                <button id="modal-submit-btn" class="btn btn-primary">Analyser le courriel</button>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->

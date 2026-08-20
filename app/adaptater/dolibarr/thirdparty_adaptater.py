@@ -34,6 +34,32 @@ class ThirdpartyAdaptater:
             raise e
 
     @staticmethod
+    def count_new_this_month() -> int:
+        """Compte les clients créés ce mois-ci."""
+        try:
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            params = {
+                "limit": 1,
+                "sortfield": "t.rowid",
+                "sqlfilters": f"(t.datec:>=:{start.strftime('%Y-%m-%d %H:%M:%S')}) AND (t.client:=:1)",
+            }
+            raw = DolibarrClientAdaptater.get("thirdparties", params=params)
+            if isinstance(raw, list) and len(raw) > 0:
+                params2 = {
+                    "limit": 100,
+                    "sortfield": "t.rowid",
+                    "sqlfilters": f"(t.datec:>=:{start.strftime('%Y-%m-%d %H:%M:%S')}) AND (t.client:=:1)",
+                }
+                raw2 = DolibarrClientAdaptater.get("thirdparties", params=params2)
+                return len(raw2) if isinstance(raw2, list) else 0
+            return 0
+        except DolibarrClientError as e:
+            logger.warning(f"ThirdpartyAdaptater.count_new_this_month failed: {e}")
+            return 0
+
+    @staticmethod
     def create(data: dict) -> dict:
         """Crée un tiers (client). Retourne {'id': ...} renvoyé par Dolibarr."""
         try:

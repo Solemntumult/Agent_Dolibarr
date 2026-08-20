@@ -15,9 +15,9 @@
     var out = escapeHtml(text);
     // Code inline
     out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
-    // Liens [texte](url) — supporte URLs absolues et relatives (/api/documents/...)
-    out = out.replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/)[^)\s]+)\)/g,
-      '<a href="$2" class="doc-link" target="_blank" rel="noopener noreferrer">$1</a>');
+    // Liens [texte](url) — supporte URLs absolues, relatives et références avec parenthèses comme (PROV16)
+    out = out.replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/|api\/)(?:[^\s()]|\([^\s()]*\))+)\)/g,
+      '<a href="$2" class="doc-link" rel="noopener noreferrer">$1</a>');
     // Gras **texte**
     out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     // Italique *texte* ou _texte_
@@ -47,15 +47,21 @@
     var alignSeparatorRegex = /^\s*\|?[\s:|-]+\|?\s*$/;
     var rawRows = [];
     var alignments = [];
-    var separatorFound = false;
 
     lines.forEach(function (line, index) {
       var trimmed = line.trim();
       if (!trimmed) return;
-      if (index === 1 && alignSeparatorRegex.test(trimmed)) {
-        alignments = parseTableAlignments(trimmed);
-        separatorFound = true;
-        return;
+      // Ligne de séparation (---|---|---)
+      if (alignSeparatorRegex.test(trimmed) && trimmed.indexOf("-") !== -1) {
+        // Si on a déjà au moins 1 ligne de données, c'est le séparateur
+        if (rawRows.length >= 1) {
+          alignments = parseTableAlignments(trimmed);
+          return;
+        }
+        // Sinon c'est peut-être la 2e ligne du bloc, on skip si ça ressemble à un séparateur
+        if (index <= 1 && /^\s*\|?\s*:?-+:?\s*\|/.test(trimmed)) {
+          return;
+        }
       }
       var clean = trimmed.replace(/^\|/, "").replace(/\|$/, "");
       var cells = clean.split("|").map(function (c) { return c.trim(); });
@@ -143,9 +149,10 @@
         return;
       }
 
-      // Tableau Markdown (détection avec | dans la 1ère ou 2ème ligne)
-      var isTable = lines.length >= 2 && lines.some(function (l) { return l.indexOf("|") !== -1; }) &&
-        (lines[0].indexOf("|") !== -1 || (lines.length > 1 && /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[1])));
+      // Tableau Markdown (détection avec | dans les lignes)
+      var pipeCount = lines.filter(function (l) { return l.indexOf("|") !== -1; }).length;
+      var hasSeparator = lines.some(function (l) { return /^\s*\|?\s*:?-+:?\s*\|/.test(l); });
+      var isTable = lines.length >= 2 && pipeCount >= 2 && (lines[0].indexOf("|") !== -1 || hasSeparator);
       if (isTable) {
         html += renderTable(lines);
         return;

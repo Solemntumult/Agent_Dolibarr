@@ -62,6 +62,20 @@ def dashboard_route():
     return ChatController.dashboard()
 
 
+@chat.route('/dashboard/clients', methods=['GET'])
+@jwt_required()
+@internal_user_required()
+def dashboard_clients_route():
+    return ChatController.dashboard_clients()
+
+
+@chat.route('/dashboard/extended', methods=['GET'])
+@jwt_required()
+@internal_user_required()
+def dashboard_extended_route():
+    return ChatController.dashboard_extended()
+
+
 @chat.route('/pending', methods=['GET'])
 @jwt_required()
 @internal_user_required()

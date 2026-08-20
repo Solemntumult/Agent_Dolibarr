@@ -11,6 +11,33 @@ from commons.instances.instances import logger
 class AgendaEventAdaptater:
 
     @staticmethod
+    def list_upcoming(limit: int = 5) -> list:
+        """Liste les prochains événements à venir (agenda)."""
+        try:
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            params = {
+                "limit": min(limit, 20),
+                "sortfield": "t.datep",
+                "sortorder": "ASC",
+                "sqlfilters": f"(t.datep:>=:'{now.strftime('%Y-%m-%d %H:%M:%S')}')",
+            }
+            raw = DolibarrClientAdaptater.get("agendaevents", params=params)
+            events = []
+            for ev in (raw if isinstance(raw, list) else []):
+                events.append({
+                    "id": ev.get("id"),
+                    "label": ev.get("label") or ev.get("libelle") or "",
+                    "date": ev.get("datep") or ev.get("datec"),
+                    "type": ev.get("type_code") or ev.get("type_label") or "",
+                    "note": ev.get("note") or "",
+                })
+            return events
+        except DolibarrClientError as e:
+            logger.warning(f"AgendaEventAdaptater.list_upcoming failed: {e}")
+            return []
+
+    @staticmethod
     def create(data: dict) -> dict:
         """Crée un événement agenda (journalisation d'une action, ex. relance d'impayé).
 

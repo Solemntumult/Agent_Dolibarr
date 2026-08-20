@@ -7,6 +7,8 @@ load_env()
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+    JWT_TOKEN_LOCATION = ["headers", "query_string"]
+    JWT_QUERY_STRING_NAME = "token"
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -23,16 +25,17 @@ class Config:
     OPENAI_MODEL_LIGHT = os.getenv("OPENAI_MODEL_LIGHT", OPENAI_MODEL)
     OPENAI_MODEL_BALANCED = os.getenv("OPENAI_MODEL_BALANCED", OPENAI_MODEL)
     OPENAI_MODEL_ADVANCED = os.getenv("OPENAI_MODEL_ADVANCED", OPENAI_MODEL)
-    OPENAI_MAX_ITERATIONS = int(os.getenv("OPENAI_MAX_ITERATIONS", "8"))
+    OPENAI_MAX_ITERATIONS = int(os.getenv("OPENAI_MAX_ITERATIONS", "5"))
     OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 
     # --- Optimisation tokens / recherche vectorielle ---
     VECTOR_SEARCH_ENABLED = os.getenv("VECTOR_SEARCH_ENABLED", "True").lower() in ("true", "1", "yes")
     VECTOR_SYNC_ON_STARTUP = os.getenv("VECTOR_SYNC_ON_STARTUP", "True").lower() in ("true", "1", "yes")
     VECTOR_MIN_SCORE = float(os.getenv("VECTOR_MIN_SCORE", "0.72"))
-    LLM_HISTORY_LIMIT = int(os.getenv("LLM_HISTORY_LIMIT", "6"))
-    LLM_MESSAGE_MAX_CHARS = int(os.getenv("LLM_MESSAGE_MAX_CHARS", "1500"))
-    LLM_TOOL_RESULT_MAX_ITEMS = int(os.getenv("LLM_TOOL_RESULT_MAX_ITEMS", "15"))
+    LLM_HISTORY_LIMIT = int(os.getenv("LLM_HISTORY_LIMIT", "4"))
+    LLM_SHORT_REPLY_HISTORY_LIMIT = int(os.getenv("LLM_SHORT_REPLY_HISTORY_LIMIT", "2"))
+    LLM_MESSAGE_MAX_CHARS = int(os.getenv("LLM_MESSAGE_MAX_CHARS", "800"))
+    LLM_TOOL_RESULT_MAX_ITEMS = int(os.getenv("LLM_TOOL_RESULT_MAX_ITEMS", "10"))
     QUERY_CACHE_ENABLED = os.getenv("QUERY_CACHE_ENABLED", "True").lower() in ("true", "1", "yes")
     QUERY_CACHE_TTL_SECONDS = int(os.getenv("QUERY_CACHE_TTL_SECONDS", "300"))
     LLM_TITLE_GENERATION = os.getenv("LLM_TITLE_GENERATION", "False").lower() in ("true", "1", "yes")

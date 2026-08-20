@@ -7,6 +7,13 @@ from controllers.confirmation.confirmation_controller import ConfirmationControl
 confirmation = Blueprint('confirmation', __name__)
 
 
+@confirmation.route('/', methods=['GET'])
+@jwt_required()
+@internal_user_required()
+def list_all_route():
+    return ConfirmationController.list_all()
+
+
 @confirmation.route('/pending', methods=['GET'])
 @jwt_required()
 @internal_user_required()

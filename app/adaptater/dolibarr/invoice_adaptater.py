@@ -63,27 +63,38 @@ class InvoiceAdaptater:
             raise e
 
     @staticmethod
-    def get_unpaid(min_days_late: int = 0, client_id: int = None, limit: int = 100) -> list:
+    def get_unpaid(min_days_late: int = 0, client_id: int = None, limit: int = 25) -> dict:
         """Factures ouvertes (statut validée), avec jours de retard calculés côté backend."""
         try:
-            invoices = InvoiceAdaptater.list_invoices(status="unpaid", limit=limit, client_id=client_id)
-            result = []
+            invoices = InvoiceAdaptater.list_invoices(status="unpaid", limit=100, client_id=client_id)
+            filtered = []
+            total_due = 0.0
             for inv in invoices:
                 days = _days_late(inv.get("due_date") or inv.get("date"))
                 if days >= int(min_days_late or 0):
-                    result.append({
+                    ttc = float(inv.get("total_ttc") or 0)
+                    total_due += ttc
+                    filtered.append({
                         "id": inv.get("id"),
                         "ref": inv.get("ref"),
                         "client_id": inv.get("client_id"),
                         "client_name": inv.get("client_name") or "Inconnu",
-                        "total_ttc": inv.get("total_ttc"),
-                        "total_ht": inv.get("total_ht"),
+                        "total_ttc": ttc,
+                        "total_ht": float(inv.get("total_ht") or 0),
                         "date": inv.get("date"),
                         "due_date": inv.get("due_date"),
                         "days_late": days,
                         "status": inv.get("status"),
                     })
-            return result
+            # Tri par retard décroissant
+            filtered.sort(key=lambda x: x["days_late"], reverse=True)
+            max_items = min(int(limit) or 25, 50)
+            return {
+                "total_count": len(filtered),
+                "total_amount_ttc": round(total_due, 2),
+                "returned_count": min(len(filtered), max_items),
+                "factures": filtered[:max_items],
+            }
         except DolibarrClientError as e:
             logger.error(f"InvoiceAdaptater.get_unpaid failed: {e}")
             raise e
@@ -132,6 +143,76 @@ class InvoiceAdaptater:
                 pass
         return InvoiceAdaptater.get_by_ref(str_val)
 
+
+    @staticmethod
+    def get_avg_payment_delay() -> dict:
+        """Délai moyen de paiement (jours entre date facture et date règlement) sur les factures payées du mois."""
+        try:
+            now = datetime.now(timezone.utc)
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            filters = [
+                "(t.fk_statut:=:2)",
+                f"(t.datef:>=:{start.strftime('%Y-%m-%d')})",
+            ]
+            params = {"limit": 200, "sqlfilters": " AND ".join(filters), "sortfield": "t.datef", "sortorder": "DESC"}
+            rows = DolibarrClientAdaptater.get("invoices", params=params)
+            if not isinstance(rows, list) or not rows:
+                return {"avg_days": None, "count": 0}
+            delays = []
+            for inv in rows:
+                try:
+                    datef = datetime.strptime(str(inv.get("datef", ""))[:10], "%Y-%m-%d")
+                    paye = inv.get("date_paye") or inv.get("paye")
+                    if paye:
+                        datep = datetime.strptime(str(paye)[:10], "%Y-%m-%d")
+                        delays.append((datep - datef).days)
+                except (ValueError, TypeError):
+                    continue
+            if not delays:
+                return {"avg_days": None, "count": 0}
+            return {"avg_days": round(sum(delays) / len(delays), 1), "count": len(delays)}
+        except DolibarrClientError as e:
+            logger.warning(f"InvoiceAdaptater.get_avg_payment_delay failed: {e}")
+            return {"avg_days": None, "count": 0}
+
+    @staticmethod
+    def get_top_products(period: str = "mois", limit: int = 5) -> list:
+        """Top produits par CA sur la période (basé sur les lignes de factures)."""
+        try:
+            now = datetime.now(timezone.utc)
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            filters = [
+                "(t.fk_statut:in:1,2)",
+                f"(t.datef:>=:{start.strftime('%Y-%m-%d')})",
+            ]
+            params = {"limit": 500, "sqlfilters": " AND ".join(filters)}
+            rows = DolibarrClientAdaptater.get("invoices", params=params)
+            if not isinstance(rows, list):
+                return []
+            product_sales = {}
+            for inv in rows:
+                inv_id = inv.get("id")
+                if not inv_id:
+                    continue
+                try:
+                    detail = DolibarrClientAdaptater.get(f"invoices/{int(inv_id)}")
+                    lines = detail.get("lines") or []
+                    for line in lines:
+                        label = line.get("label") or line.get("desc") or "Service/Produit"
+                        qty = float(line.get("qty") or 0)
+                        up = float(line.get("subprice") or line.get("price") or 0)
+                        total = qty * up
+                        if label not in product_sales:
+                            product_sales[label] = {"label": label, "total_ttc": 0, "qty": 0}
+                        product_sales[label]["total_ttc"] += total
+                        product_sales[label]["qty"] += qty
+                except DolibarrClientError:
+                    continue
+            top = sorted(product_sales.values(), key=lambda x: x["total_ttc"], reverse=True)[:limit]
+            return [{"label": t["label"], "total_ttc": round(t["total_ttc"], 2), "qty": round(t["qty"], 1)} for t in top]
+        except Exception as e:
+            logger.warning(f"InvoiceAdaptater.get_top_products failed: {e}")
+            return []
 
     @staticmethod
     def create(data: dict) -> dict:

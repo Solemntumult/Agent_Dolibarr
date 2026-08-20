@@ -41,6 +41,14 @@ class DolibarrClientAdaptater:
                 headers=DolibarrClientAdaptater._headers(),
                 timeout=Config.DOLIBARR_TIMEOUT,
             )
+            if response.status_code == 404 and method == "GET":
+                # Dolibarr renvoie 404 lorsque aucun enregistrement ne correspond aux filtres
+                # Pour les listes (ex: invoices, thirdparties, proposals, products), on retourne une liste vide []
+                endpoint_clean = endpoint.strip("/")
+                if "/" not in endpoint_clean:
+                    return []
+                return {}
+
             if response.status_code >= 400:
                 message = response.text[:500] if response.text else f"HTTP {response.status_code}"
                 raise DolibarrClientError(f"Dolibarr {method} {endpoint} -> {response.status_code}: {message}")

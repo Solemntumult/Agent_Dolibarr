@@ -226,7 +226,7 @@ class LangChainVectorStore:
                         context_parts.append(
                             f"• Produit #{hit['entity_id']}: {meta.get('ref', 'N/A')} - "
                             f"{meta.get('label', 'N/A')} "
-                            f"(Prix HT: {meta.get('price_ht', 'N/A')} €) "
+                            f"(Prix HT: {meta.get('price_ht', 'N/A')} FCFA) "
                             f"[pertinence: {hit['score']:.2f}]"
                         )
 
